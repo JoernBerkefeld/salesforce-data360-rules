@@ -1,5 +1,5 @@
 // Extracted unchanged from sf-plugin-data (src/services/cross-dataspace-rename.ts and
-// src/services/data-space-check.ts at commit 1fc21a4). Behaviour must stay identical; the parity
+// src/services/data-space-check.ts at commit 1412d09). Behaviour must stay identical; the parity
 // tests in test/parity.test.mjs hold the cases sf-plugin-data tests these functions with.
 
 /**
@@ -220,7 +220,13 @@ export function translateFieldName(
       ? { name: field.slice('ssot__'.length), rule: 'field-ssot' }
       : { name: field };
   }
-  if (context.target === 'default' && kind === 'unified' && !unifiedFieldsWithoutSsot.has(field))
+  // A field already spelled with ssot__ is the default spelling (a mis-spelled file): kept.
+  if (
+    context.target === 'default' &&
+    kind === 'unified' &&
+    !field.startsWith('ssot__') &&
+    !unifiedFieldsWithoutSsot.has(field)
+  )
     return { name: `ssot__${field}`, rule: 'field-ssot' };
   return { name: field };
 }

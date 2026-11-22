@@ -278,9 +278,6 @@ test('every placement translateDmoName and translateFieldName make is a candidat
         const found = fieldCandidates(field, name, from, to, spaces);
         for (const owner of candidates) {
           const expected = translateFieldName(context, owner.kind, field);
-          // translateFieldName gives a field already spelled ssot__ a second ssot__ towards default
-          // (`ssot__ssot__FirstName__c`), a name no object has; the candidates leave it as it is.
-          if (expected.name.startsWith('ssot__ssot__')) continue;
           assert.ok(
             found.some(
               (candidate) =>
