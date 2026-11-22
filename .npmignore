@@ -1,0 +1,11 @@
+node_modules
+test
+coverage
+.github
+.husky
+scripts
+src
+*.test.mjs
+tsconfig*.json
+*.tsbuildinfo
+*.tgz
