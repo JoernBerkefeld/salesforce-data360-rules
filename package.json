@@ -1,6 +1,6 @@
 {
   "name": "salesforce-data360-rules",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Data 360 naming rules between data spaces: how DMO, field, data graph and transform names change from one data space to another",
   "keywords": [
     "salesforce",

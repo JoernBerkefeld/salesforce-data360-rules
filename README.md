@@ -29,6 +29,8 @@ Every data space other than `default` has a prefix, chosen when it was created, 
   `UnifiedssotIndividual<Id>__dlm` is `ds2_UnifiedIndividual<Id>__dlm`.
 - **Data graphs, data transforms and calculated insights** get, lose or swap the prefix:
   `PhoneGraph` is `ds2_PhoneGraph`.
+- **Segments** are stored as `ds2_<Name>` outside `default`. **Identity resolution rulesets** are
+  named `<type>_<rulesetId>` in `default` and `ds2_<type>_<rulesetId>` elsewhere.
 - **Key qualifier fields** (`KQ_…`) never change.
 
 The way back to `default` is not always clear. `ds2_Order__dlm` can be the copy of the standard
@@ -41,8 +43,12 @@ DMO `ssot__Order__dlm` or the custom DMO `Order__dlm`. The rules alone cannot te
 - `translateDmoName(context, name)` places a DMO name.
 - `translateFieldName(context, kind, field)` places a field name of a placed DMO.
 - `translateUniqueName(context, name)` places a data graph, data transform or insight name.
+- `translateSegmentName(context, name)` places a segment name.
+- `translateRulesetName(context, name)` places an identity resolution ruleset name.
 - `placeDmo(context, name)` is `translateDmoName`, plus identity resolution outputs paired
   from the org's ruleset list when you pass one.
+- `pairedByRulesets(context, name)` says whether `placeDmo` needs the ruleset list for a DMO
+  name, so you read the list only when a name needs it.
 
 Each returns `{ name, rule, kind }`, or `{ reason }` when the name cannot be placed exactly.
 

@@ -1,13 +1,16 @@
-// Parity with sf-plugin-data at commit 1fc21a4. The first four tests are copied unchanged from its
+// Parity with sf-plugin-data at commit cdf7a21. The first four tests are copied unchanged from its
 // test/cross-dataspace.test.mjs (only the import changed); the others hold the cases its
 // test/cross-dataspace-graph-ir-transform.test.mjs checks through translateDocument, on the
 // functions it calls for them.
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  pairedByRulesets,
   placeDmo,
   translateDmoName,
   translateFieldName,
+  translateRulesetName,
+  translateSegmentName,
   translateUniqueName,
 } from '../lib/index.js';
 
@@ -323,4 +326,44 @@ test('placeDmo pairs the outputs of the oldest default ruleset without suffix fr
     placeDmo(to(SPACE), 'UnifiedIndividual__dlm').reason,
     /only the ruleset list pairs it/u,
   );
+});
+
+test('segment names get, lose or swap the prefix', () => {
+  assert.equal(translateSegmentName(to(SPACE), 'Audience').name, 'ds2_Audience');
+  assert.equal(translateSegmentName(to('default', SPACE), 'ds2_Audience').name, 'Audience');
+  assert.equal(translateSegmentName(to('third', SPACE), 'ds2_Audience').name, 'th_Audience');
+  assert.match(translateSegmentName(to('default', SPACE), 'Audience').reason, /ds2_<Name>/u);
+  assert.match(translateSegmentName(to(SPACE), 'th_Audience').reason, /data space third/u);
+});
+
+test('identity resolution ruleset names get, lose or swap the prefix; the ruleset ID stays', () => {
+  assert.deepEqual(translateRulesetName(to(SPACE), 'Individual_t1'), {
+    name: 'ds2_Individual_t1',
+    rule: 'name-prefix',
+    kind: 'custom',
+  });
+  assert.equal(
+    translateRulesetName(to('default', SPACE), 'ds2_Individual_t1').name,
+    'Individual_t1',
+  );
+  assert.equal(
+    translateRulesetName(to('third', SPACE), 'ds2_Individual_t1').name,
+    'th_Individual_t1',
+  );
+  assert.match(
+    translateRulesetName(to('third', SPACE), 'Individual_t1').reason,
+    /ds2_<type>_<rulesetId>/u,
+  );
+  assert.match(translateRulesetName(to(SPACE), 'th_Individual_t1').reason, /data space third/u);
+});
+
+test('pairedByRulesets: identity resolution outputs need the ruleset list, other DMOs do not', () => {
+  // An output placed by rule, and outputs of the oldest default ruleset that no rule places.
+  assert.equal(pairedByRulesets(to(SPACE), 'UnifiedssotIndividualT1__dlm'), true);
+  assert.equal(pairedByRulesets(to(SPACE), 'UnifiedIndividual__dlm'), true);
+  assert.equal(pairedByRulesets(to(SPACE), 'IndividualIdentityLink__dlm'), true);
+  // A standard DMO, a custom DMO and a name with a third data space's prefix.
+  assert.equal(pairedByRulesets(to(SPACE), 'ssot__Individual__dlm'), false);
+  assert.equal(pairedByRulesets(to(SPACE), 'Order__dlm'), false);
+  assert.equal(pairedByRulesets(to(SPACE), 'th_Order__dlm'), false);
 });

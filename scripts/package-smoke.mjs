@@ -53,9 +53,12 @@ assert.deepEqual(Object.keys(api).toSorted(), [
   'DataSpaceListError',
   'dmoCandidates',
   'fieldCandidates',
+  'pairedByRulesets',
   'placeDmo',
   'translateDmoName',
   'translateFieldName',
+  'translateRulesetName',
+  'translateSegmentName',
   'translateUniqueName',
 ]);
 const spaces = [{ name: 'default' }, { name: 'dataspace2', prefix: 'ds2' }];

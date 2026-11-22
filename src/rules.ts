@@ -1,5 +1,5 @@
 // Extracted unchanged from sf-plugin-data (src/services/cross-dataspace-rename.ts and
-// src/services/data-space-check.ts at commit 1412d09). Behaviour must stay identical; the parity
+// src/services/data-space-check.ts at commit cdf7a21). Behaviour must stay identical; the parity
 // tests in test/parity.test.mjs hold the cases sf-plugin-data tests these functions with.
 
 /**
@@ -232,6 +232,34 @@ export function translateFieldName(
 }
 
 /**
+ * Place a segment name: Salesforce stores a segment of a non-default data space as
+ * `<prefix>_<Name>`, and one of `default` without any prefix.
+ * @param {CrossSpaceContext} context Translation context.
+ * @param {string} name Segment name in the source data space.
+ * @returns {Placed | NotPlaced} Target name and rule.
+ */
+export function translateSegmentName(context: CrossSpaceContext, name: string): Placed | NotPlaced {
+  const found = prefixes(context);
+  if ('reason' in found) return found;
+  const { source, target } = found;
+  let base = name;
+  if (source === undefined) {
+    const owner = foreignPrefix(context, name);
+    if (owner !== undefined)
+      return { reason: `its name already carries the prefix of the data space ${owner}` };
+  } else {
+    if (!name.startsWith(`${source}_`))
+      return { reason: `a segment of ${context.source} is stored as ${source}_<Name>` };
+    base = name.slice(source.length + 1);
+  }
+  return {
+    name: target === undefined ? base : `${target}_${base}`,
+    rule: 'segment-prefix',
+    kind: 'custom',
+  };
+}
+
+/**
  * Place the name of a data graph or data transform by the prefix rule (Step 1): in a non-default
  * data space it carries that space's prefix, in `default` none. A name of a non-default source
  * created without its prefix keeps its base; a name with another data space's prefix is not placed.
@@ -249,6 +277,34 @@ export function translateUniqueName(context: CrossSpaceContext, name: string): P
   const owner = foreignPrefix(context, base);
   if (owner !== undefined)
     return { reason: `its name carries the prefix of the data space ${owner}` };
+  return {
+    name: target === undefined ? base : `${target}_${base}`,
+    rule: 'name-prefix',
+    kind: 'custom',
+  };
+}
+
+/**
+ * Place an identity resolution ruleset name: Salesforce names a ruleset `<type>_<rulesetId>` in
+ * `default` and `<prefix>_<type>_<rulesetId>` elsewhere (live API 68); the ruleset ID is kept.
+ * @param {CrossSpaceContext} context Translation context.
+ * @param {string} name Ruleset name in the source data space.
+ * @returns {Placed | NotPlaced} Target name and rule.
+ */
+export function translateRulesetName(context: CrossSpaceContext, name: string): Placed | NotPlaced {
+  const found = prefixes(context);
+  if ('reason' in found) return found;
+  const { source, target } = found;
+  let base = name;
+  if (source === undefined) {
+    const owner = foreignPrefix(context, name);
+    if (owner !== undefined)
+      return { reason: `its name already carries the prefix of the data space ${owner}` };
+  } else {
+    if (!name.startsWith(`${source}_`))
+      return { reason: `a ruleset of ${context.source} is named ${source}_<type>_<rulesetId>` };
+    base = name.slice(source.length + 1);
+  }
   return {
     name: target === undefined ? base : `${target}_${base}`,
     rule: 'name-prefix',
@@ -334,6 +390,18 @@ function unsuffixedOutput(context: CrossSpaceContext, name: string): boolean {
     !/^Unified(?:Link)?ssot/u.test(base) &&
     (/^Unified[A-Z]/u.test(base) || base.endsWith('IdentityLink'))
   );
+}
+
+/**
+ * Whether a DMO name is placed from the org's ruleset list: an identity resolution output by
+ * rule, or one of the oldest `default` ruleset without the `ssot` spelling.
+ * @param {CrossSpaceContext} context Translation context.
+ * @param {string} name DMO name in the source data space.
+ * @returns {boolean} Whether the ruleset list is needed for it.
+ */
+export function pairedByRulesets(context: CrossSpaceContext, name: string): boolean {
+  const placed = translateDmoName(context, name);
+  return 'reason' in placed ? unsuffixedOutput(context, name) : placed.rule === 'unified-output';
 }
 
 /**
